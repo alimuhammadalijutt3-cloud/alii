@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ali Voice Changer</title>
+<style>
+body{font-family:Arial;background:#111;padding:20px;color:#fff}
+.box{background:#222;padding:20px;border-radius:15px;max-width:400px;margin:auto;text-align:center;border:1px solid #333}
+.logo{width:110px;height:110px;border-radius:50%;border:3px solid #25D366;object-fit:cover}
+h2{color:#25D366}
+.name{color:#aaa;margin-bottom:15px;font-weight:bold}
+button{width:100%;padding:14px;margin-top:10px;border:none;border-radius:10px;font-weight:bold;font-size:15px}
+.btn-rec{background:#ff3b30;color:#fff}
+.btn-play{background:#25D366;color:#fff}
+.btn-stop{background:#555;color:#fff}
+select{width:100%;padding:12px;border-radius:10px;margin-top:10px;background:#333;color:#fff;border:none}
+p{font-size:11px;color:#777;margin-top:15px}
+</style>
+</head>
+<body>
+<div class="box">
+<img src="ali.jpg" class="logo" onerror="this.src='via.placeholder.com'">
+<h2>Voice Changer</h2>
+<div class="name">Ali's Method</div>
+
+<select id="voice">
+<option value="normal">Normal Voice</option>
+<option value="girl">Girl Voice</option>
+<option value="boy">Boy Voice</option>
+<option value="chipmunk">Chipmunk Voice</option>
+<option value="robot">Robot Voice</option>
+<option value="deep">Deep Bass Voice</option>
+</select>
+
+<button class="btn-rec" id="recBtn" onclick="toggleRec()">🎙️ Recording Start Karo</button>
+<button class="btn-play" onclick="playVoice()">▶️ Voice Suno / Change Karo</button>
+<button class="btn-stop" onclick="stopAll()">⏹️ Stop</button>
+
+<audio id="audio" controls style="width:100%;margin-top:15px;display:none"></audio>
+<p>Created by Ali - 100% Working</p>
+</div>
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+let audioBlob;
+let isRecording = false;
+let audioContext;
+let recBtn = document.getElementById("recBtn");
+
+async function toggleRec(){
+if(!isRecording){
+let stream = await navigator.mediaDevices.getUserMedia({audio:true});
+mediaRecorder = new MediaRecorder(stream);
+audioChunks = [];
+mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+mediaRecorder.onstop = () => {
+audioBlob = new Blob(audioChunks,{type:'audio/webm'});
+let audioUrl = URL.createObjectURL(audioBlob);
+let audio = document.getElementById("audio");
+audio.src = audioUrl;
+audio.style.display = "block";
+};
+mediaRecorder.start();
+isRecording = true;
+recBtn.innerText = "🔴 Recording... Dobara Dabao Stop Karne Ke Liye";
+recBtn.style.background = "#000";
+}else{
+mediaRecorder.stop();
+isRecording = false;
+recBtn.innerText = "🎙️ Recording Start Karo";
+recBtn.style.background = "#ff3b30";
+}
+}
+
+function playVoice(){
+if(!audioBlob){alert("Pehle voice record karo!");return;}
+let effect = document.getElementById("voice").value;
+let audio = document.getElementById("audio");
+audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let reader = new FileReader();
+reader.readAsArrayBuffer(audioBlob);
+reader.onload = async () => {
+let buffer = await audioContext.decodeAudioData(reader.result);
+let source = audioContext.createBufferSource();
+source.buffer = buffer;
+
+let gainNode = audioContext.createGain();
+let filter = audioContext.createBiquadFilter();
+
+if(effect=="girl"){source.playbackRate.value=1.6; filter.type="highpass"; filter.frequency.value=300;}
+else if(effect=="boy"){source.playbackRate.value=0.75; filter.type="lowpass"; filter.frequency.value=800;}
+else if(effect=="chipmunk"){source.playbackRate.value=2.0;}
+else if(effect=="robot"){source.playbackRate.value=0.9; filter.type="bandpass"; filter.frequency.value=1000;}
+else if(effect=="deep"){source.playbackRate.value=0.6;}
+else{source.playbackRate.value=1.0;}
+
+source.connect(filter);
+filter.connect(gainNode);
+gainNode.connect(audioContext.destination);
+source.start(0);
+};
+}
+
+function stopAll(){
+if(audioContext){audioContext.close();}
+let audio = document.getElementById("audio");
+audio.pause();
+}
+</script>
+</body>
+</html>
